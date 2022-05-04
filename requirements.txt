@@ -1,0 +1,5 @@
+nltk
+re
+shelve
+json
+beautifulsoup4

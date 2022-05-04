@@ -13,6 +13,7 @@
 import json
 import os
 import shelve
+from bs4 import BeautifulSoup
 
 
 #Data process
@@ -86,10 +87,30 @@ class Indexer():
 
 
 	def get_data(self):
-		for directory in os.listdir(path):
-			for files in os.listdir(directory):
+		for directory in os.listdir(self.path):
+			for file in os.listdir(self.path + "/" + directory + "/"):
 				#Actual files here
+				#JSON["url"] = url of crawled page, ignore fragments
+				#JSON["content"] = actual HTML
+				#JSON["encoding"] = ENCODING
+				print(file)
+				file_load = open(self.path + "/" + directory + "/"+file)
+				data = json.load(file_load)
+				soup = BeautifulSoup(data["content"],from_encoding=data["encoding"])
+				words = word_tokenize(soup.get_text())
+				for word in words:
+					if word is not "" and word.isalnum():
+						print(word)
+				exit(1)
+
 				
 
 
 
+
+def main():
+	indexer = Indexer(True,0)
+	indexer.get_data()
+
+if __name__ == "__main__":
+	main()
