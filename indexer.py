@@ -18,6 +18,9 @@ from bs4 import BeautifulSoup
 
 #Data process
 from nltk.tokenize import word_tokenize
+from nltk.stem import PorterStemmer
+from sklearn.feature_extraction.text import TfidfVectorizer
+
 import re
 
 
@@ -27,7 +30,8 @@ class Indexer():
 		self.path = "data/DEV/"
 		self.restart = restart
 		self.trimming = trimming
-
+		self.stemmer = PorterStemmer()
+		self.vectorizer = TfidfVectorizer(lowercase=True,ngram_range = (1,3))
 
 		#Shelves for index
 		#https://www3.nd.edu/~busiforc/handouts/cryptography/letterfrequencies.html
@@ -85,6 +89,13 @@ class Indexer():
 			print("You have somehow went beyond the magic")
 			return None
 
+	def get_tf_idf(self,words,word):
+		#tf_idf
+		#words = whole text
+		#word the word we finding the score for
+		#return the score
+		pass
+
 
 	def get_data(self):
 		for directory in os.listdir(self.path):
@@ -93,15 +104,32 @@ class Indexer():
 				#JSON["url"] = url of crawled page, ignore fragments
 				#JSON["content"] = actual HTML
 				#JSON["encoding"] = ENCODING
-				print(file)
 				file_load = open(self.path + "/" + directory + "/"+file)
 				data = json.load(file_load)
 				soup = BeautifulSoup(data["content"],from_encoding=data["encoding"])
 				words = word_tokenize(soup.get_text())
+				tokenized_words = list()
+				stemmed_words = list()
 				for word in words:
-					if word is not "" and word.isalnum():
-						print(word)
+					if word != "" and word.isalnum():
+						#So all the tokenized words are here,
+						tokenized_words.append(word)
+				#YOUR CODE HERE
+				print(tokenized_words)
+
+				for word in tokenized_words:
+					stemmed_words.append(self.stemmer.stem(word))
+
+					print(X)
+					#stemming,
+					#tf_idf
+					#get_tf_idf(stemmed_words,word)
+					#post = Posting()
+
+				print(stemmed_words)
+				#
 				exit(1)
+
 
 				
 

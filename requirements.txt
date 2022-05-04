@@ -3,3 +3,4 @@ re
 shelve
 json
 beautifulsoup4
+sklearn
