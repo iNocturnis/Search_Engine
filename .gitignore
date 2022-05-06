@@ -1,2 +1,3 @@
-/data/DEV
+/data/
 *.shelve
+/__pycache__/
