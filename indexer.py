@@ -16,10 +16,13 @@ import shelve
 from bs4 import BeautifulSoup
 
 
+
 #Data process
 from nltk.tokenize import word_tokenize
 from nltk.stem import PorterStemmer
 from sklearn.feature_extraction.text import TfidfVectorizer
+import pandas as pd
+import numpy as np
 
 import re
 
@@ -88,13 +91,26 @@ class Indexer():
 		else:
 			print("You have somehow went beyond the magic")
 			return None
-
+	# I have a test file (mytest.py) with pandas but couldn't figure out how to grab just a single cell.
+	# so I came up with this, if anyone knows how to get a single cell and can explain it to
+	# me I would love to know, as I think that method might be quicker, maybe, idk it like
+	# 4am
+	# https://stackoverflow.com/questions/34449127/sklearn-tfidf-transformer-how-to-get-tf-idf-values-of-given-words-in-documen
 	def get_tf_idf(self,words,word):
 		#tf_idf
 		#words = whole text
 		#word the word we finding the score for
 		#return the score
-		pass
+		vect = TfidfVectorizer()
+		tfidf_matrix = vect.fit_transform(words)
+		feature_index = tfidf_matrix[0,:].nonzero()[1]
+		feature_names = vect.get_feature_names_out()
+		tfidf_scores = zip(feature_index, [tfidf_matrix[0, x] for x in feature_index])
+		for w, s in [(feature_names[i], s) for (i, s) in tfidf_scores]:
+			if w == word: 
+				return s
+			else:
+				return -1 # don't really know what to do if the word doesn't exist, we can catch with negative or print an error?
 
 
 	def get_data(self):
