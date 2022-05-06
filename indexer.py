@@ -101,16 +101,14 @@ class Indexer():
 		#words = whole text
 		#word the word we finding the score for
 		#return the score
-		vect = TfidfVectorizer()
-		tfidf_matrix = vect.fit_transform(words)
-		feature_index = tfidf_matrix[0,:].nonzero()[1]
-		feature_names = vect.get_feature_names_out()
-		tfidf_scores = zip(feature_index, [tfidf_matrix[0, x] for x in feature_index])
-		for w, s in [(feature_names[i], s) for (i, s) in tfidf_scores]:
-			if w == word: 
-				return s
-			else:
-				return -1 # don't really know what to do if the word doesn't exist, we can catch with negative or print an error?
+		try:
+			tfidf = TfidfVectorizer()
+			tfidf_matrix = tfidf.fit_transform(words)
+			df = pd.DataFrame(tfidf_matrix.toarray(), columns = tfidf.get_feature_names_out())
+			return(df.iloc[0][''.join(word)])
+			#print(df)
+		except KeyError: 
+			return -1
 
 
 	def get_data(self):
