@@ -107,7 +107,9 @@ class Indexer():
 	# me I would love to know, as I think that method might be quicker, maybe, idk it like
 	# 4am
 	# https://stackoverflow.com/questions/34449127/sklearn-tfidf-transformer-how-to-get-tf-idf-values-of-given-words-in-documen
-	def get_tf_idf(self,words,word):
+
+	# Andy: added paramenter imporant_words in order to do multiplication of score
+	def get_tf_idf(self,words,word, important_words):
 		#tf_idf
 		#words = whole text
 		#word the word we finding the score for
@@ -116,7 +118,19 @@ class Indexer():
 			tfidf = TfidfVectorizer()
 			tfidf_matrix = tfidf.fit_transform(words)
 			df = pd.DataFrame(tfidf_matrix.toarray(), columns = tfidf.get_feature_names_out())
-			return(df.iloc[0][''.join(word)])
+			score = df.iloc[0][''.join(word)]
+			for k,v in important_words.items():
+				if k == 'b' and word in v:
+					score = score * 1.2
+				elif k == 'h1' and word in v:
+					score = score * 1.75
+				elif k == 'h2' and word in v:
+					score = score * 1.5
+				elif k == 'h3' and word in v:
+					score = score * 1.2
+				elif k == 'title' and word in v:
+					score = score * 2
+			return(score)
 			#print(df)
 		except KeyError: 
 			return -1
@@ -135,6 +149,15 @@ class Indexer():
 				data = json.load(file_load)
 				soup = BeautifulSoup(data["content"],from_encoding=data["encoding"])
 				words = word_tokenize(soup.get_text())
+
+				#getting important tokens
+				important = {'b' : [], 'h1' : [], 'h2' : [], 'h3' : [], 'title' : []}
+				for type in important.keys():
+					for i in soup.findAll(type):
+						for word in word_tokenize(i.text):
+							important[type].append(self.stemmer.stem(word))
+						
+
 				toc = perf_counter()
 				if toc - tic > 1 :
 					print("Took " + str(toc - tic) + "seconds to tokenize text !")
@@ -166,7 +189,8 @@ class Indexer():
 				for word in stemmed_words:
 					#posting = Posting(data["url"],self.get_tf_idf(list(' '.join(stemmed_words)),word))
 					tic = perf_counter()
-					posting = Posting(data["url"],self.tf_idf_raw(stemmed_words,word))
+					#added argument important
+					posting = Posting(data["url"],self.tf_idf_raw(stemmed_words,word, important))
 					toc = perf_counter()
 					if toc - tic > 1 :
 						print("Took " + str(toc - tic) + "seconds to tf_idf text !")
