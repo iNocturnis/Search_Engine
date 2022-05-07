@@ -197,73 +197,9 @@ class Indexer():
 	#Found 55770 documents
 	#
 
-				ticker = perf_counter()
-				tic = perf_counter()
-				file_load = open(self.path + "/" + directory + "/"+file)
-				data = json.load(file_load)
-				soup = BeautifulSoup(data["content"],from_encoding=data["encoding"])
-				words = word_tokenize(soup.get_text())
-
 				#getting important tokens
-				important = {'b' : [], 'h1' : [], 'h2' : [], 'h3' : [], 'title' : []}
-				for type in important.keys():
-					for i in soup.findAll(type):
-						for word in word_tokenize(i.text):
-							important[type].append(self.stemmer.stem(word))
+				
 						
-
-				toc = perf_counter()
-				if toc - tic > 1 :
-					print("Took " + str(toc - tic) + "seconds to tokenize text !")
-
-				tokenized_words = list()
-				stemmed_words = list()
-
-				tic = perf_counter()
-				for word in words:
-					if word != "" and re.fullmatch('[A-Za-z0-9]+',word):
-						#So all the tokenized words are here,
-						tokenized_words.append(word)
-				toc = perf_counter()
-				if toc - tic > 1 :
-					print("Took " + str(toc - tic) + "seconds to isalnum text !")
-				#YOUR CODE HERE
-
-				tic = perf_counter()
-				for word in tokenized_words:
-					stemmed_words.append(self.stemmer.stem(word))
-					#stemming,
-					#tf_idf
-					#get_tf_idf(stemmed_words,word)
-					#post = Posting()
-				toc = perf_counter()
-				if toc - tic > 1 :
-					print("Took " + str(toc - tic) + "seconds to stemmed text !")
-
-				for word in stemmed_words:
-					#posting = Posting(data["url"],self.get_tf_idf(list(' '.join(stemmed_words)),word))
-					tic = perf_counter()
-					#added argument important
-					posting = Posting(data["url"],self.tf_idf_raw(stemmed_words,word, important))
-					toc = perf_counter()
-					if toc - tic > 1 :
-						print("Took " + str(toc - tic) + "seconds to tf_idf text !")
-
-					tic = perf_counter()
-					self.save_index(word,posting)
-					toc = perf_counter()
-					if toc - tic > 1 :
-						print("Took " + str(toc - tic) + "seconds to save text !")
-
-				tocker = perf_counter()
-				print("Finished " + data['url'] + " in \t " + str(tocker-ticker))
-
-	def tf_idf_raw(self,words,word):
-		tf_times = words.count(word)
-
-		tf = tf_times/len(words)
-
-		return tf
 
 		
 
@@ -275,9 +211,8 @@ class Indexer():
 
 
 def main():
-	indexer = Indexer(False,0)
-
-	#indexer.get_data()
+	indexer = Indexer(True,0)
+	indexer.get_data()
 
 if __name__ == "__main__":
 	main()

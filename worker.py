@@ -43,6 +43,12 @@ class Worker(Thread):
 		tokenized_words = list()
 		stemmed_words = list()
 
+		important = {'b' : [], 'h1' : [], 'h2' : [], 'h3' : [], 'title' : []}
+		for key_words in important.keys():
+			for i in soup.findAll(key_words):
+				for word in word_tokenize(i.text):
+					important[key_words].append(self.indexer.stemmer.stem(word))
+
 		tic = perf_counter()
 		for word in words:
 			if word != "" and re.fullmatch('[A-Za-z0-9]+',word):
@@ -69,7 +75,26 @@ class Worker(Thread):
 		for word in counts:
 			#posting = Posting(data["url"],self.get_tf_idf(list(' '.join(stemmed_words)),word))
 			tic = perf_counter()
-			posting = Posting(data["url"],counts[word]/size)
+			weight = 1.0
+			index = 0
+			"""
+			for group in important:
+				for word_important in group:
+					if word_important.lower() == word.lower():
+						if index == 0:
+							weight = 1.2
+						elif index == 1:
+							weight = 1.8
+						elif index == 2:
+							weight = 1.5
+						elif index == 3:
+							weight = 1.3
+						elif index == 4:
+							weight = 2.0
+				index = index + 1
+			"""
+			
+			posting = Posting(data["url"],counts[word]/size*weight)
 			toc = perf_counter()
 			if toc - tic > 1 :
 				print("Took " + str(toc - tic) + "seconds to tf_idf text !")
