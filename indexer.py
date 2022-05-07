@@ -15,7 +15,8 @@ import os
 import shelve
 from bs4 import BeautifulSoup
 from time import perf_counter
-
+import time
+import threading
 
 
 #Data process
@@ -29,6 +30,7 @@ import re
 
 #Logging postings
 from posting import Posting
+from worker import Worker
 
 
 class Indexer():
@@ -61,16 +63,27 @@ class Indexer():
 
 
 		self.save_1 = shelve.open("save_1.shelve")
+		self.save_1_lock = threading.Lock()
 		self.save_2 = shelve.open("save_2.shelve")
+		self.save_2_lock = threading.Lock()
 		self.save_3 = shelve.open("save_3.shelve")
+		self.save_3_lock = threading.Lock()
 		self.save_4 = shelve.open("save_4.shelve")
+		self.save_4_lock = threading.Lock()
 		self.save_5 = shelve.open("save_5.shelve")
+		self.save_5_lock = threading.Lock()
 
+		print(len(list(self.save_1.keys())))
+		print(len(list(self.save_2.keys())))
+		print(len(list(self.save_3.keys())))
+		print(len(list(self.save_4.keys())))
+		print(len(list(self.save_5.keys())))
 
 	def save_index(self,word,posting):
 		cur_save = self.get_save_file(word)
+		lock = self.get_save_lock(word)
+		lock.acquire()
 		shelve_list = list()
-
 		try:
 			shelve_list = cur_save[word]
 			shelve_list.append(posting)
@@ -80,10 +93,12 @@ class Indexer():
 			if toc - tic > 1 :
 				print("Took " + str(toc - tic) + "seconds to sort shelve list !")
 			cur_save.sync()
+			lock.release()
 		except:
 			shelve_list.append(posting)
 			cur_save[word] = shelve_list
 			cur_save.sync()
+			lock.release()
 
 	def get_save_file(self,word):
 		#return the correct save depending on the starting letter of word
@@ -101,7 +116,20 @@ class Indexer():
 			print(word)
 			print("You have somehow went beyond the magic")
 			return self.save_5
-
+	def get_save_lock(self,word):
+		word_lower = word.lower()
+		if re.match(r"^[a-d0-1].*",word_lower):
+			return self.save_1_lock
+		elif re.match(r"^[e-k2-3].*",word_lower):
+			return self.save_2_lock
+		elif re.match(r"^[l-q4-7].*",word_lower):
+			return self.save_3_lock
+		elif re.match(r"^[r-z8-9].*",word_lower):
+			return self.save_4_lock
+		else:
+			print(word)
+			print("You have somehow went beyond the magic")
+			return self.save_5_lock.acquire()
 	# I have a test file (mytest.py) with pandas but couldn't figure out how to grab just a single cell.
 	# so I came up with this, if anyone knows how to get a single cell and can explain it to
 	# me I would love to know, as I think that method might be quicker, maybe, idk it like
@@ -123,62 +151,38 @@ class Indexer():
 
 
 	def get_data(self):
+
+		num_threads = 8
+		threads = list()
+
 		for directory in os.listdir(self.path):
 			for file in os.listdir(self.path + "/" + directory + "/"):
 				#Actual files here
 				#JSON["url"] = url of crawled page, ignore fragments
 				#JSON["content"] = actual HTML
 				#JSON["encoding"] = ENCODING
-				ticker = perf_counter()
-				tic = perf_counter()
-				file_load = open(self.path + "/" + directory + "/"+file)
-				data = json.load(file_load)
-				soup = BeautifulSoup(data["content"],from_encoding=data["encoding"])
-				words = word_tokenize(soup.get_text())
-				toc = perf_counter()
-				if toc - tic > 1 :
-					print("Took " + str(toc - tic) + "seconds to tokenize text !")
+				index = 0
+				while True:
+					file_path = self.path + "" + directory + "/"+file
+					if len(threads) < num_threads:
+						thread = Worker(self,file_path)
+						threads.append(thread)
+						thread.start()
+						break
+					else:
+						if not threads[index].is_alive():
+							threads[index] = Worker(self,file_path)
+							threads[index].start()
+							break
+						else:
+							index = index + 1
+							if(index >= num_threads):
+								index = 0
+							time.sleep(.1)
+	
+	#Found 55770 documents
+	#
 
-				tokenized_words = list()
-				stemmed_words = list()
-
-				tic = perf_counter()
-				for word in words:
-					if word != "" and re.fullmatch('[A-Za-z0-9]+',word):
-						#So all the tokenized words are here,
-						tokenized_words.append(word)
-				toc = perf_counter()
-				if toc - tic > 1 :
-					print("Took " + str(toc - tic) + "seconds to isalnum text !")
-				#YOUR CODE HERE
-
-				tic = perf_counter()
-				for word in tokenized_words:
-					stemmed_words.append(self.stemmer.stem(word))
-					#stemming,
-					#tf_idf
-					#get_tf_idf(stemmed_words,word)
-					#post = Posting()
-				toc = perf_counter()
-				if toc - tic > 1 :
-					print("Took " + str(toc - tic) + "seconds to stemmed text !")
-
-				for word in stemmed_words:
-					#posting = Posting(data["url"],self.get_tf_idf(list(' '.join(stemmed_words)),word))
-					tic = perf_counter()
-					posting = Posting(data["url"],self.tf_idf_raw(stemmed_words,word))
-					toc = perf_counter()
-					if toc - tic > 1 :
-						print("Took " + str(toc - tic) + "seconds to tf_idf text !")
-
-					tic = perf_counter()
-					self.save_index(word,posting)
-					toc = perf_counter()
-					if toc - tic > 1 :
-						print("Took " + str(toc - tic) + "seconds to save text !")
-
-				tocker = perf_counter()
-				print("Finished " + data['url'] + " in \t " + str(tocker-ticker))
 
 	def tf_idf_raw(self,words,word):
 		tf_times = words.count(word)
@@ -197,8 +201,9 @@ class Indexer():
 
 
 def main():
-	indexer = Indexer(True,0)
-	indexer.get_data()
+	indexer = Indexer(False,0)
+
+	#indexer.get_data()
 
 if __name__ == "__main__":
 	main()
