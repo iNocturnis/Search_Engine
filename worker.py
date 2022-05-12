@@ -52,49 +52,54 @@ class Worker(Thread):
 		tic = perf_counter()
 		for word in words:
 			if word != "" and re.fullmatch('[A-Za-z0-9]+',word):
-				#So all the tokenized words are here,
 				tokenized_words.append(word)
 		toc = perf_counter()
 		if toc - tic > 1 :
 			print("Took " + str(toc - tic) + "seconds to isalnum text !")
-		#YOUR CODE HERE
 
 		tic = perf_counter()
 		for word in tokenized_words:
 			stemmed_words.append(self.indexer.stemmer.stem(word))
-			#stemming,
-			#tf_idf
-			#get_tf_idf(stemmed_words,word)
-			#post = Posting()
+
 		toc = perf_counter()
 		if toc - tic > 1 :
 			print("Took " + str(toc - tic) + "seconds to stemmed text !")
 
-		counts = Counter(stemmed_words)
-		size = len(stemmed_words)
-		for word in counts:
-			#posting = Posting(data["url"],self.get_tf_idf(list(' '.join(stemmed_words)),word))
+			"""
+		tfidf = TfidfVectorizer(ngram_range=(1,3)) # ngram_range is range of n-values for different n-grams to be extracted (1,3) gets unigrams, bigrams, trigrams
+		tfidf_matrix = tfidf.fit_transform(stemmed_words)  # fit trains the model, transform creates matrix
+		#df = pd.DataFrame(tfidf_matrix.toarray(), columns = tfidf.get_feature_names_out()) # store value of matrix to associated word/n-gram
+		tfidf.sget_feature_names_out()
+		#tf_idf_dict = df.to_dict() # transform dataframe to dict *could be expensive the larger the data gets, tested on ~1000 word doc and took 0.002 secs to run
+		
+		print(tfidf_matrix)
+		"""
+
+		tfIdfVectorizer=TfidfVectorizer(use_idf=True)
+		tfIdf = tfIdfVectorizer.fit_transform(stemmed_words)
+		df = pd.DataFrame(tfIdf[0].T.todense(), index=tfIdfVectorizer.get_feature_names_out(), columns=["TF-IDF"])
+		df = df.sort_values('TF-IDF', ascending=False)
+
+		print(df.head(25))
+
+		for word in tf_idf_dict.keys():
 			tic = perf_counter()
+			print(tf_idf_dict)
 			weight = 1.0
-			index = 0
-			"""
-			for group in important:
-				for word_important in group:
-					if word_important.lower() == word.lower():
-						if index == 0:
-							weight = 1.2
-						elif index == 1:
-							weight = 1.8
-						elif index == 2:
-							weight = 1.5
-						elif index == 3:
-							weight = 1.3
-						elif index == 4:
-							weight = 2.0
-				index = index + 1
-			"""
+			for k,v in important.items():
+				if k == 'b' and word in v:
+					weight = 1.2
+				elif k == 'h1' and word in v:
+					weight = 1.75
+				elif k == 'h2' and word in v:
+					weight = 1.5
+				elif k == 'h3' and word in v:
+					weight = 1.2
+				elif k == 'title' and word in v:
+					weight = 2
 			
-			posting = Posting(data["url"],counts[word]/size*weight)
+			posting = Posting(data["url"],tf_idf_dict[word]*weight)
+			
 			toc = perf_counter()
 			if toc - tic > 1 :
 				print("Took " + str(toc - tic) + "seconds to tf_idf text !")

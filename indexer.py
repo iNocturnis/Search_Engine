@@ -116,6 +116,7 @@ class Indexer():
 			print(word)
 			print("You have somehow went beyond the magic")
 			return self.save_5
+
 	def get_save_lock(self,word):
 		word_lower = word.lower()
 		if re.match(r"^[a-d0-1].*",word_lower):
@@ -130,6 +131,7 @@ class Indexer():
 			print(word)
 			print("You have somehow went beyond the magic")
 			return self.save_5_lock.acquire()
+
 	# I have a test file (mytest.py) with pandas but couldn't figure out how to grab just a single cell.
 	# so I came up with this, if anyone knows how to get a single cell and can explain it to
 	# me I would love to know, as I think that method might be quicker, maybe, idk it like
@@ -178,7 +180,7 @@ class Indexer():
 
 	def get_data(self):
 
-		num_threads = 8
+		num_threads = 1
 		threads = list()
 
 		for directory in os.listdir(self.path):
