@@ -134,6 +134,8 @@ class Indexer():
 	# so I came up with this, if anyone knows how to get a single cell and can explain it to
 	# me I would love to know, as I think that method might be quicker, maybe, idk it like
 	# 4am
+
+	# retuns a dict of words/n-grams with their assosiated tf-idf score *can also return just a single score or a pandas dataframe
 	# https://stackoverflow.com/questions/34449127/sklearn-tfidf-transformer-how-to-get-tf-idf-values-of-given-words-in-documen
 
 	# Andy: added paramenter imporant_words in order to do multiplication of score
@@ -162,6 +164,16 @@ class Indexer():
 			#print(df)
 		except KeyError: 
 			return -1
+			tfidf = TfidfVectorizer(ngram_range=(1,3)) # ngram_range is range of n-values for different n-grams to be extracted (1,3) gets unigrams, bigrams, trigrams
+			tfidf_matrix = tfidf.fit_transform(words)  # fit trains the model, transform creates matrix
+			df = pd.DataFrame(tfidf_matrix.toarray(), columns = tfidf.get_feature_names_out()) # store value of matrix to associated word/n-gram
+			#return(df.iloc[0][''.join(word)]) #used for finding single word in dataset
+			data = df.to_dict() # transform dataframe to dict *could be expensive the larger the data gets, tested on ~1000 word doc and took 0.002 secs to run
+			return data			# returns the dict of words/n-grams with tf-idf
+			#print(df)			# debugging 
+		except: 		
+			print("Error in tf_idf!")
+			return
 
 
 	def get_data(self):
