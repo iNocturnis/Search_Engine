@@ -116,6 +116,7 @@ class Indexer():
 			print(word)
 			print("You have somehow went beyond the magic")
 			return self.save_5
+
 	def get_save_lock(self,word):
 		word_lower = word.lower()
 		if re.match(r"^[a-d0-1].*",word_lower):
