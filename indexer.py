@@ -147,6 +147,7 @@ class Indexer():
 		#word the word we finding the score for
 		#return the score
 		try:
+			'''
 			tfidf = TfidfVectorizer()
 			tfidf_matrix = tfidf.fit_transform(words)
 			df = pd.DataFrame(tfidf_matrix.toarray(), columns = tfidf.get_feature_names_out())
@@ -166,12 +167,14 @@ class Indexer():
 			#print(df)
 		except KeyError: 
 			return -1
+			'''
+		try:	
 			tfidf = TfidfVectorizer(ngram_range=(1,3)) # ngram_range is range of n-values for different n-grams to be extracted (1,3) gets unigrams, bigrams, trigrams
 			tfidf_matrix = tfidf.fit_transform(words)  # fit trains the model, transform creates matrix
 			df = pd.DataFrame(tfidf_matrix.toarray(), columns = tfidf.get_feature_names_out()) # store value of matrix to associated word/n-gram
 			#return(df.iloc[0][''.join(word)]) #used for finding single word in dataset
-			data = df.to_dict() # transform dataframe to dict *could be expensive the larger the data gets, tested on ~1000 word doc and took 0.002 secs to run
-			return data			# returns the dict of words/n-grams with tf-idf
+			tfidf_dict = df.to_dict() # transform dataframe to dict *could be expensive the larger the data gets, tested on ~1000 word doc and took 0.002 secs to run
+			return tfidf_dict			# returns the dict of words/n-grams with tf-idf as value
 			#print(df)			# debugging 
 		except: 		
 			print("Error in tf_idf!")
