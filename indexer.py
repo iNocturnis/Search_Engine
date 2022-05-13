@@ -17,6 +17,7 @@ from bs4 import BeautifulSoup
 from time import perf_counter
 import time
 import threading
+import pickle
 
 
 #Data process
@@ -36,11 +37,26 @@ from worker import Worker
 class Indexer():
 	def __init__(self,restart,trimming):
 		#Config stuffs
-		self.path = "data/DEV/"
+		self.path = "D:/Visual Studio Workspace/CS121/assignment3/data/DEV/"
 		self.restart = restart
 		self.trimming = trimming
 		self.stemmer = PorterStemmer()
+		self.id = list()
 
+		# Creates a pickle file that is a list of urls where the index of the url is the id that the posting refers to.
+		p = os.path.dirname(os.path.abspath(__file__))
+		my_filename = os.path.join(p, "urlID.pkl")
+		if os.path.exists(my_filename):
+			os.remove(my_filename)
+		
+		# Creates file and closes it
+		self.f = open(my_filename, "wb")
+		pickle.dump(id, self.f)
+		self.f.close()
+
+		# Opens for reading for the entire duration of indexer for worker to use 
+		self.f = open(my_filename, "rb+")
+		
 		#Shelves for index
 		#https://www3.nd.edu/~busiforc/handouts/cryptography/letterfrequencies.html
 		#https://www.irishtimes.com/news/science/how-many-numbers-begin-with-a-1-more-than-30-per-cent-1.4162466
@@ -79,6 +95,9 @@ class Indexer():
 		print(len(list(self.save_4.keys())))
 		print(len(list(self.save_5.keys())))
 
+	def get_url_id(self, url):
+		return self.id.index(url)
+
 	def save_index(self,word,posting):
 		cur_save = self.get_save_file(word)
 		lock = self.get_save_lock(word)
@@ -88,7 +107,9 @@ class Indexer():
 			shelve_list = cur_save[word]
 			shelve_list.append(posting)
 			tic = perf_counter()
-			shelve_list.sort(key=lambda x: x.tf_idf, reverse = True)
+			# Sort by url id to help with query search
+			shelve_list.sort(key=lambda x: x.url)
+			# shelve_list.sort(key=lambda x: x.tf_idf, reverse = True)
 			toc = perf_counter()
 			if toc - tic > 1 :
 				print("Took " + str(toc - tic) + "seconds to sort shelve list !")
@@ -137,33 +158,22 @@ class Indexer():
 	# 4am
 	# https://stackoverflow.com/questions/34449127/sklearn-tfidf-transformer-how-to-get-tf-idf-values-of-given-words-in-documen
 
-	# Andy: added paramenter imporant_words in order to do multiplication of score
-	def get_tf_idf(self,words,word, important_words):
-		#tf_idf
-		#words = whole text
-		#word the word we finding the score for
-		#return the score
+	# removed parameter "word" since it wasn't used
+	# TODO: Add important words scaling
+	def get_tf_idf(self, words):
+		# words = [whole text] one element list
+		# return the score
 		try:
-			tfidf = TfidfVectorizer()
-			tfidf_matrix = tfidf.fit_transform(words)
-			df = pd.DataFrame(tfidf_matrix.toarray(), columns = tfidf.get_feature_names_out())
-			score = df.iloc[0][''.join(word)]
-			for k,v in important_words.items():
-				if k == 'b' and word in v:
-					score = score * 1.2
-				elif k == 'h1' and word in v:
-					score = score * 1.75
-				elif k == 'h2' and word in v:
-					score = score * 1.5
-				elif k == 'h3' and word in v:
-					score = score * 1.2
-				elif k == 'title' and word in v:
-					score = score * 2
-			return(score)
-			#print(df)
-		except KeyError: 
-			return -1
-
+			tfidf = TfidfVectorizer(ngram_range=(1,3)) # ngram_range is range of n-values for different n-grams to be extracted (1,3) gets unigrams, bigrams, trigrams
+			tfidf_matrix = tfidf.fit_transform(words)  # fit trains the model, transform creates matrix
+			df = pd.DataFrame(tfidf_matrix.toarray(), columns = tfidf.get_feature_names_out()) # store value of matrix to associated word/n-gram
+			#return(df.iloc[0][''.join(word)]) #used for finding single word in dataset
+			data = df.to_dict() # transform dataframe to dict *could be expensive the larger the data gets, tested on ~1000 word doc and took 0.002 secs to run
+			return data			# returns the dict of words/n-grams with tf-idf
+			#print(df)			# debugging 
+		except: 		
+			print("Error in tf_idf!")
+			return
 
 	def get_data(self):
 
@@ -179,6 +189,11 @@ class Indexer():
 				index = 0
 				while True:
 					file_path = self.path + "" + directory + "/"+file
+					# Add url to id here so that there isn't any problems when worker is multi-threaded
+					load = open(file_path)
+					data = json.load(load)
+					if data["url"] not in self.id:
+						self.id.append(data["url"])
 					if len(threads) < num_threads:
 						thread = Worker(self,file_path)
 						threads.append(thread)
@@ -194,7 +209,8 @@ class Indexer():
 							if(index >= num_threads):
 								index = 0
 							time.sleep(.1)
-	
+		pickle.dump(self.id, self.f)
+		# should I self.f.close() here?
 	#Found 55770 documents
 	#
 
