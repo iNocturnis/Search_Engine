@@ -184,7 +184,7 @@ class Indexer():
 		for token, postings in current_save.items():
 			for p in postings:
 				p.tfidf = p.tf * math.log(len(self.id)/len(postings))
-				self.normalize[p.url] += p.tfidf
+				self.normalize[p.url] += p.tfidf**2
 
 
 	def get_data(self):
@@ -261,8 +261,6 @@ class Indexer():
 				#getting important tokens
 				
 						
-
-
 def main():
 	indexer = Indexer(True,0)
 	indexer.get_data()
