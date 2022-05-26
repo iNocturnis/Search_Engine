@@ -10,6 +10,7 @@
 #Posting ---> Source of file, tf-idf score. #for now we will only use these two, as we get more complex posting will be change accordingly
 
 #Data input
+import math
 import json
 import os
 import shelve
@@ -42,6 +43,7 @@ class Indexer():
 		self.trimming = trimming
 		self.stemmer = PorterStemmer()
 		self.id = list()
+
 
 		# Creates a pickle file that is a list of urls where the index of the url is the id that the posting refers to.
 		p = os.path.dirname(os.path.abspath(__file__))
@@ -164,7 +166,7 @@ class Indexer():
 		# words = [whole text] one element list
 		# return the score
 		try:
-			tfidf = TfidfVectorizer(ngram_range=(1,3)) # ngram_range is range of n-values for different n-grams to be extracted (1,3) gets unigrams, bigrams, trigrams
+			tfidf = TfidfVectorizer(ngram_range=(1,1)) # ngram_range is range of n-values for different n-grams to be extracted (1,3) gets unigrams, bigrams, trigrams
 			tfidf_matrix = tfidf.fit_transform(words)  # fit trains the model, transform creates matrix
 			df = pd.DataFrame(tfidf_matrix.toarray(), columns = tfidf.get_feature_names_out()) # store value of matrix to associated word/n-gram
 			#return(df.iloc[0][''.join(word)]) #used for finding single word in dataset
@@ -173,7 +175,27 @@ class Indexer():
 			#print(df)			# debugging 
 		except: 		
 			print("Error in tf_idf!")
-			return
+			return -1
+	
+	def tf(self, text, url):
+		# tf
+		tokens = {}
+		split = text.split(" ")
+		# loop using index to keep track of position
+		for i in range(len(split)):
+			if split[i] not in tokens:
+				tokens[split[i]] = Posting(self.get_url_id(url), 1, i)
+			
+			else:
+				tokens[split[i]].rtf += 1
+				tokens[split[i]].tf = (1 + math.log(tokens[split[i]].rtf))
+				tokens[split[i]].positions.append(i)
+		return tokens
+
+	def tfidf(self, current_save):
+		for token, postings in current_save.items():
+			for p in postings:
+				p.tfidf = p.tf * math.log(len(self.id)/len(postings))
 
 	def get_data(self):
 
@@ -190,10 +212,15 @@ class Indexer():
 				while True:
 					file_path = self.path + "" + directory + "/"+file
 					# Add url to id here so that there isn't any problems when worker is multi-threaded
+
+					tic = perf_counter()
 					load = open(file_path)
 					data = json.load(load)
 					if data["url"] not in self.id:
 						self.id.append(data["url"])
+					toc = perf_counter()
+					print("Took " + str(toc - tic) + " seconds to save url to self.id")
+						
 					if len(threads) < num_threads:
 						thread = Worker(self,file_path)
 						threads.append(thread)
@@ -209,6 +236,12 @@ class Indexer():
 							if(index >= num_threads):
 								index = 0
 							time.sleep(.1)
+		# These last few function calls calculates idf and finalizes tf-idf weighting for each index
+		self.tfidf(self.save_1)
+		self.tfidf(self.save_2)
+		self.tfidf(self.save_3)
+		self.tfidf(self.save_4)
+		self.tfidf(self.save_5)
 		pickle.dump(self.id, self.f)
 		# should I self.f.close() here?
 	#Found 55770 documents

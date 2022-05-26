@@ -31,11 +31,12 @@ class Worker(Thread):
 
 	def run(self):
 		print("Target: " + str(self.file))
-
+		ticker = perf_counter()
 		file_load = open(self.file)
 		data = json.load(file_load)
 		soup = BeautifulSoup(data["content"],features="lxml")
 		# Gets a cleaner version text comparative to soup.get_text()
+		tic = perf_counter()
 		clean_text = ' '.join(soup.stripped_strings)
 		# Looks for large white space, tabbed space, and other forms of spacing and removes it
 		# Regex expression matches for space characters excluding a single space or words
@@ -46,11 +47,19 @@ class Worker(Thread):
 		clean_text = " ".join([self.indexer.stemmer.stem(i) for i in clean_text.split()])
 		# Put clean_text as an element in a list because get_tf_idf workers properly with single element lists
 		x = [clean_text]
+		toc = perf_counter()
+		print("Took " + str(toc - tic) + " seconds to create clean text")
 		# ngrams is a dict
 		# structure looks like {ngram : {0: tf-idf score}}
 		ngrams = self.indexer.get_tf_idf(x)
-
-		for ngram, tfidf in ngrams.items():
-			posting = Posting(self.indexer.get_url_id(data["url"]), tfidf[0])
-			self.indexer.save_index(ngram,posting)
+		if ngrams != -1:
+			tic = perf_counter()
+			for ngram, tfidf in ngrams.items():
+				posting = Posting(self.indexer.get_url_id(data["url"]), tfidf[0])
+				self.indexer.save_index(ngram,posting)
+			toc = perf_counter()
+			print("Took " + str(toc - tic) + " seconds to save ngram")
+			
+			tocker = perf_counter()
+			print("Took " + str(tocker - ticker) + " seconds to work")
 
