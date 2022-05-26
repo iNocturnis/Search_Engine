@@ -43,21 +43,8 @@ class Indexer():
 		self.trimming = trimming
 		self.stemmer = PorterStemmer()
 		self.id = list()
-
-
-		# Creates a pickle file that is a list of urls where the index of the url is the id that the posting refers to.
-		p = os.path.dirname(os.path.abspath(__file__))
-		my_filename = os.path.join(p, "urlID.pkl")
-		if os.path.exists(my_filename):
-			os.remove(my_filename)
-		
-		# Creates file and closes it
-		self.f = open(my_filename, "wb")
-		pickle.dump(id, self.f)
-		self.f.close()
-
-		# Opens for reading for the entire duration of indexer for worker to use 
-		self.f = open(my_filename, "rb+")
+		# list that contains the denominator for normalization before taking the square root of it. square root will be taken during query time
+		self.normalize = list()
 		
 		#Shelves for index
 		#https://www3.nd.edu/~busiforc/handouts/cryptography/letterfrequencies.html
@@ -192,10 +179,13 @@ class Indexer():
 				tokens[split[i]].positions.append(i)
 		return tokens
 
+	# Does the idf part of the tfidf
 	def tfidf(self, current_save):
 		for token, postings in current_save.items():
 			for p in postings:
 				p.tfidf = p.tf * math.log(len(self.id)/len(postings))
+				self.normalize[p.url] += p.tfidf
+
 
 	def get_data(self):
 
@@ -236,28 +226,41 @@ class Indexer():
 							if(index >= num_threads):
 								index = 0
 							time.sleep(.1)
+		# Make a list the size of the corpus to keep track of document scores 
+		self.normalize = [0] * len(self.id)
+
 		# These last few function calls calculates idf and finalizes tf-idf weighting for each index
 		self.tfidf(self.save_1)
 		self.tfidf(self.save_2)
 		self.tfidf(self.save_3)
 		self.tfidf(self.save_4)
 		self.tfidf(self.save_5)
-		pickle.dump(self.id, self.f)
-		# should I self.f.close() here?
+		
+		# Creates a pickle file that is a list of urls where the index of the url is the id that the posting refers to.
+		p = os.path.dirname(os.path.abspath(__file__))
+		my_filename = os.path.join(p, "urlID.pkl")
+		if os.path.exists(my_filename):
+			os.remove(my_filename)
+		# Creates file and closes it
+		f = open(my_filename, "wb")
+		pickle.dump(self.id, f)
+		f.close()
+
+		# Creates a pickle file that will contain the denominator (before the square root) for normalizing wt
+		p = os.path.dirname(os.path.abspath(__file__))
+		my_filename = os.path.join(p, "normalize.pkl")
+		if os.path.exists(my_filename):
+			os.remove(my_filename)
+		# Creates file and closes it
+		f = open(my_filename, "wb")
+		pickle.dump(self.normalize, f)
+		f.close()
 	#Found 55770 documents
 	#
 
 				#getting important tokens
 				
 						
-
-		
-
-
-
-				
-
-
 
 
 def main():
