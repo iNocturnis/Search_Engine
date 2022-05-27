@@ -46,7 +46,7 @@ class Index():
 class Indexer():
 	def __init__(self,list_partials,weight,data_paths,worker_factory=Worker,worker_weight_factory=Worker_Weight):
 		#Config stuffs
-		self.path = "data/DEV/"
+		self.path = "test/"
 		self.num_doc = 0
 		self.list_partials = list_partials
 		self.weight = weight
@@ -76,20 +76,6 @@ class Indexer():
 		for worker in self.workers:
 			worker.join()
 
-	def join_weight(self):
-		for worker in self.weight_workers:
-			worker.join()
-
-	def start_async_weight(self):
-		self.weight_workers = [
-			self.worker_weight_factory(worker_id,self)
-			for worker_id in range(1)]
-		for worker in self.weight_workers:
-			worker.start()
-
-	def start_weight(self):
-		self.start_async_weight()
-		self.join_weight()
 
 	def get_postings(self,index):
 		merged_index_index = open("merged_index.index" ,'r')
@@ -104,11 +90,11 @@ class Indexer():
 		data = json.loads(json_value)
 		return data['postings']
 
-	def set_total_weight(self):
-		self.get_data_path()
-		self.start_weight()
-		
-			
+	def set_weight(self):
+		weight_file = open('docs.weight','w')
+		jsonStr =json.dumps(self.weight, default=lambda o: o.__dict__,sort_keys=False)
+		weight_file.write(jsonStr)
+		weight_file.close()
 
 	def get_weight(self,doc_id):
 		weight = open('docs.weight','r')
@@ -223,12 +209,22 @@ class Indexer():
 
 def main():
 	indexer = Indexer(list(),dict(),list())
-	#indexer.get_data_path()
-	#print("We have " + str(len(indexer.data_paths)) + " documents to go through !" )
-	#indexer.start()
-	#indexer.merge()
+	indexer.get_data_path()
+	print("We have " + str(len(indexer.data_paths)) + " documents to go through !" )
+	indexer.start()
+	indexer.merge()
 	print("Finished merging into 1 big happy family")
-	indexer.set_total_weight()
+	indexer.set_weight()
+
+	tic = time.perf_counter()
+	indexer.get_postings('artifici')
+	toc = time.perf_counter()
+	print(f"Took {toc - tic:0.4f} seconds to get postings for artifici")
+	tic = time.perf_counter()
+	indexer.get_weight('00ba3af6a00b7cfb4928e5d234342c5dc46b4e31714d4a8f315a2dd4d8e49860')
+	print(f"Took {toc - tic:0.4f} seconds to get weight for some random page ")
+	toc = time.perf_counter()
+
 	
 
 

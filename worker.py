@@ -12,6 +12,7 @@ from nltk.stem import PorterStemmer
 
 from posting import Posting
 
+import math
 
 import sys
 
@@ -110,17 +111,23 @@ class Worker(Thread):
 					counter[word][1].append(i)
 
 			doc_length = len(tokens)
+			total = 0
 			for index in counter:
+				tf = counter[index][0]/doc_length
+				log_tf = 1 + math.log(tf)
+				total = total + log_tf * log_tf
 				if index in self.index:
 					postings = self.index[index]
-					postings.append(Posting(doc_id,url,counter[index][0]/doc_length,0,counter[index][1]))
+					postings.append(Posting(doc_id,url,tf,0,counter[index][1]))
 				else:
 					self.index[index] = list()
-					self.index[index].append(Posting(doc_id,url,counter[index][0]/doc_length,0,counter[index][1]))
+					self.index[index].append(Posting(doc_id,url,tf,0,counter[index][1]))
 					self.index[index].sort(key=lambda y:y.doc_id)
 
+			self.indexer.weight[doc_id] = math.sqrt(total)
+
 			#10 Megabytes index (in Ram approx)
-			if sys.getsizeof(self.index) > 10000000:
+			if sys.getsizeof(self.index) > 1000000:
 				self.dump()
 
 
