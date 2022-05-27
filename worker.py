@@ -54,9 +54,8 @@ class Worker(Thread):
 		ngrams = self.indexer.get_tf_idf(x)
 		if ngrams != -1:
 			tic = perf_counter()
-			for ngram, tfidf in ngrams.items():
-				posting = Posting(self.indexer.get_url_id(data["url"]), tfidf[0])
-				self.indexer.save_index(ngram,posting)
+			for ngram, posting in ngrams.items():
+				self.indexer.save_index(ngram, posting)
 			toc = perf_counter()
 			print("Took " + str(toc - tic) + " seconds to save ngram")
 			

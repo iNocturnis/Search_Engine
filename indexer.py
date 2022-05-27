@@ -172,7 +172,6 @@ class Indexer():
 		for i in range(len(split)):
 			if split[i] not in tokens:
 				tokens[split[i]] = Posting(self.get_url_id(url), 1, i)
-			
 			else:
 				tokens[split[i]].rtf += 1
 				tokens[split[i]].tf = (1 + math.log(tokens[split[i]].rtf))
