@@ -33,7 +33,6 @@ import re
 #Logging postings
 from posting import Posting
 from worker import Worker
-from worker_weight import Worker_Weight
 
 class Node():
 	index_value = ''
@@ -44,7 +43,7 @@ class Index():
 	index = list()
 
 class Indexer():
-	def __init__(self,list_partials,weight,data_paths,worker_factory=Worker,worker_weight_factory=Worker_Weight):
+	def __init__(self,list_partials,weight,data_paths,worker_factory=Worker):
 		#Config stuffs
 		self.path = "data/DEV"
 		self.num_doc = 0
@@ -54,12 +53,10 @@ class Indexer():
 		self.stemmer = PorterStemmer()
 		self.data_paths_lock = Lock()
 		self.list_partials_lock = Lock()
-		self.workers = list()
 		
+		self.workers = list()
 		self.worker_factory = worker_factory
 
-		self.weight_workers = list()
-		self.worker_weight_factory = worker_weight_factory
 
 	def start_async(self):
 		self.workers = [
