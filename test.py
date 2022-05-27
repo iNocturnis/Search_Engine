@@ -1,115 +1,59 @@
+from threading import Thread
 import json
-from posting import Posting
-import math
+import os
+import shelve
 import sys
-import random
-from nltk.corpus import words
-random_list = [1,2,3,4,5,6,7,8,9,10]
+from bs4 import BeautifulSoup
+from time import perf_counter
+from nltk.stem import PorterStemmer
+import nltk
+import time
+from posting import Posting
 
+import re
 
-test_data = words.words()
-random.shuffle(test_data)
+self_index = dict()
+stemmer = PorterStemmer()
+target = 'data/DEV/aiclub_ics_uci_edu/8ef6d99d9f9264fc84514cdd2e680d35843785310331e1db4bbd06dd2b8eda9b.json'
+file_load = open(target)
+data = json.load(file_load)
+doc_id = target[target.rfind('/')+1:-5]
+url = data['url']
+soup = BeautifulSoup(data["content"],features="lxml")
+# Gets a cleaner version text comparative to soup.get_text()
+clean_text = ' '.join(soup.stripped_strings)
+# Looks for large white space, tabbed space, and other forms of spacing and removes it
+# Regex expression matches for space characters excluding a single space or words
+clean_text = re.sub(r'\s[^ \w]', '', clean_text)
+# Tokenizes text and joins it back into an entire string. Make sure it is an entire string is essential for get_tf_idf to work as intended
+clean_text = " ".join([i for i in clean_text.split() if i != "" and re.fullmatch('[A-Za-z0-9]+', i)])
+# Stems tokenized text
+clean_text = " ".join([stemmer.stem(i) for i in clean_text.split()])
 
-class Node():
-	index_value = ''
-	postings = list()
+tokens = nltk.word_tokenize(clean_text)
 
-class Index():
-	length = 0
-	index = list()
+#counter(count,positionals)
 
-def random_posting(id):
-	return Posting(id,random.choice(random_list),random.choice(random_list),[random.choice(random_list),random.choice(random_list),random.choice(random_list),random.choice(random_list),
-	random.choice(random_list),random.choice(random_list),random.choice(random_list),random.choice(random_list)])
+counter = dict()
+for i in range(len(tokens)):
+	word = tokens[i]
+	if word in counter:
+		counter[word][0] = counter[word][0] + 1
+		counter[word][1].append(i)
+	else:
+		counter[word] = [1,list()]
+		counter[word][1].append(i)
+print(counter)
+doc_length = len(tokens)
+for index in counter:
+	if index in self_index:
+		postings = self_index[index]
+		postings.append(Posting(doc_id,url,counter[index][0]/doc_length,0,counter[index][1]))
+	else:
+		self_index[index] = list()
+		self_index[index].append(Posting(doc_id,url,counter[index][0]/doc_length,0,counter[index][1]))
 
-def random_partial_index(name):
-	part_index = Index()
-	part_index.index = list()
-	part_index.length = 0
-	with open(name +'.partial', 'w') as f:
-		for i in range(1000):
+for index in self_index:
+	print(index + str(self_index[index]) + '\n')
 
-			node1 = Node()
-			node1.index_value = random.choice(test_data).lower()
-			node1.postings = list()
-			for i in range(10):
-				node1.postings.append(random_posting(i))
-
-			jsonStr = json.dumps(node1, default=lambda o: o.__dict__,sort_keys=False)
-			
-			part_index.index.append((node1.index_value,f.tell()))
-			f.write(jsonStr + '\n')
-			part_index.length = part_index.length + 1
-
-	part_index.index.sort(key=lambda y:y[0])
-	jsonStr =json.dumps(part_index, default=lambda o: o.__dict__,sort_keys=False)
-	with open(name + '.index','w') as f:
-		f.write(jsonStr)
-
-def merge(partial_indices):
-	partial_files = list()
-	partial_index_files = list()
-	parital_index_indices = list()
-	merged_index = open("merged_index.full",'w')
-	num_indices = len(partial_indices)
-
-	#Full Index.Index and Length
-	full_index = Index()
-	full_index.index = list()
-	full_index.length = 0
-
-	for partial_index in partial_indices:
-		file = open(partial_index+'.partial','r')
-		partial_files.append(file)
-		index = open(partial_index+'.index','r')
-		partial_index_files.append(index)
-
-	for partial_index_file in partial_index_files:
-		partial_index_file.seek(0,0)
-		parital_index_indices.append(json.loads(partial_index_file.readline()))
-
-	#Start all indexes at 0
-	for partial_file in partial_files:
-		partial_file.seek(0,0)
-
-	pointers = [0]*num_indices
-
-	while(True):
-
-		#Get all values from all indices to find min
-		value = None
-		values = list()
-		for i in range(num_indices):
-			if pointers[i] < parital_index_indices[i]['length']:
-				values.append(parital_index_indices[i]['index'][pointers[i]][0])
-			
-		if(len(values) == 0):
-			break
-		value = min(values)
-
-		#Get data from the min value of all indices if exists then save to mergedIndex
-		if value == None:
-			print("I have crashed some how by not getting min value")
-			break
-
-		node = Node()
-		node.index_value = value
-		for i in range(num_indices):
-			if pointers[i] < parital_index_indices[i]['length'] and parital_index_indices[i]['index'][pointers[i]][0] == value:
-				to_seek = parital_index_indices[i]['index'][pointers[i]][1]
-				partial_files[i].seek(to_seek,0)
-				json_value = partial_files[i].readline()
-				temp_node = json.loads(json_value)
-				node.postings = node.postings + temp_node['postings']
-				pointers[i] = pointers[i] + 1
-		
-		node.postings.sort(key=lambda y:y['doc_id'])
-		full_index.index.append((value,merged_index.tell()))
-		full_index.length = full_index.length + 1
-		jsonStr = json.dumps(node,default=lambda o: o.__dict__,sort_keys=False)
-		merged_index.write(jsonStr + '\n')
-
-	full_index.index.sort(key=lambda y:y[0])
-	jsonStr =json.dumps(full_index, default=lambda o: o.__dict__,sort_keys=False)
-	with open("merged_index.index" ,'w') as f:
-		f.write(jsonStr)
+print("The size of the dictionary is {} bytes".format(sys.getsizeof(self_index)))
