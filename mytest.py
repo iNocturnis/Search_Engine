@@ -4,6 +4,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 import pandas as pd
 import numpy as np
 
+
 #tf_idf
 #words = whole text
 #word the word we finding the score for
@@ -19,13 +20,12 @@ words = ['this is the first document '
 doc1 = ["I can't fucking take it any more. Among Us has singlehandedly ruined my life. The other day my teacher was teaching us Greek Mythology and he mentioned a pegasus and I immediately thought 'Pegasus? more like Mega Sus!!!!' and I've never wanted to kms more. I can't look at a vent without breaking down and fucking crying. I can't eat pasta without thinking 'IMPASTA??? THATS PRETTY SUS!!!!' Skit 4 by Kanye West. The lyrics ruined me. A Mongoose, or the 25th island of greece. The scientific name for pig. I can't fucking take it anymore. Please fucking end my suffering."]
 doc2 = ["Anyways, um... I bought a whole bunch of shungite rocks, do you know what shungite is? Anybody know what shungite is? No, not Suge Knight, I think he's locked up in prison. I'm talkin' shungite. Anyways, it's a two billion year-old like, rock stone that protects against frequencies and unwanted frequencies that may be traveling in the air. That's my story, I bought a whole bunch of stuff. Put 'em around the la casa. Little pyramids, stuff like that."]
 word = 'life'
-
 try:
-    tfidf = TfidfVectorizer()
-    tfidf_matrix = tfidf.fit_transform(doc1)
+    tfidf = TfidfVectorizer(ngram_range=(3,3)) # ngram_range is range of n-values for different n-grams to be extracted (1,3) gets unigrams, bigrams, trigrams
+    tfidf_matrix = tfidf.fit_transform(words)
     df = pd.DataFrame(tfidf_matrix.toarray(), columns = tfidf.get_feature_names_out())
-    print(df.iloc[0][''.join(word)])
-    #print(df)
+    #print(df.iloc[0][''.join(word)])
+    data = df.to_dict()
 except KeyError: # word does not exist 
     print(-1)
 
