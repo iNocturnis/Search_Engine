@@ -46,7 +46,7 @@ class Index():
 class Indexer():
 	def __init__(self,list_partials,weight,data_paths,worker_factory=Worker,worker_weight_factory=Worker_Weight):
 		#Config stuffs
-		self.path = "test/"
+		self.path = "data/DEV"
 		self.num_doc = 0
 		self.list_partials = list_partials
 		self.weight = weight
