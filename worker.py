@@ -37,8 +37,8 @@ class Worker(Thread):
 		part_index.length = 0
 		part_index.index = list()
 
-		cur_partial_index_str = str(self.worker_id) + "_" + str(self.num_partial) + '.partial'
-		cur_partial_index_index_str = str(self.worker_id) + "_" + str(self.num_partial) + '.index'
+		cur_partial_index_str = "temp/" + str(self.worker_id) + "_" + str(self.num_partial) + '.partial'
+		cur_partial_index_index_str = "temp/" +  str(self.worker_id) + "_" + str(self.num_partial) + '.index'
 
 
 		cur_partial_index = open(cur_partial_index_str,'w')
@@ -59,8 +59,9 @@ class Worker(Thread):
 		jsonStr =json.dumps(part_index, default=lambda o: o.__dict__,sort_keys=False)
 		cur_partial_index_index.write(jsonStr)
 
-		self.num_partial = self.num_partial + 1
 		self.indexer.add_partial_index(str(self.worker_id) + "_" + str(self.num_partial))
+		self.num_partial = self.num_partial + 1
+		self.index.clear()
 
 
 	def run(self):
@@ -119,7 +120,7 @@ class Worker(Thread):
 					self.index[index].sort(key=lambda y:y.doc_id)
 
 			#10 Megabytes index (in Ram approx)
-			if sys.getsizeof(self.index) > 500000:
+			if sys.getsizeof(self.index) > 10000000:
 				self.dump()
 
 
