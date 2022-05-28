@@ -232,10 +232,10 @@ class Indexer():
 		load_index_index()
 
 	def create_index(self):
-		indexer.get_data_path()
-		print("We have " + str(len(indexer.data_paths)) + " documents to go through !" )
-		indexer.start()
-		indexer.merge()
+		self.get_data_path()
+		print("We have " + str(len(self.data_paths)) + " documents to go through !" )
+		self.start()
+		self.merge()
 		print("Finished merging into 1 big happy family")
-		indexer.set_weight()
+		self.set_weight()
 		print("I AM DONE INDEXING !")

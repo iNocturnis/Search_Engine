@@ -22,4 +22,9 @@
 	{% for result in results %}
 		<p>{{result[0]}} at <a href="{{result[1]}}">{{result[1]}}</a></p>
 	{% endfor %}
+
+	{% for error in errors %}
+		<p>{{error}}</p>
+	{% endfor %}
+
 {% endblock %}
