@@ -1,0 +1,52 @@
+
+### Bad:
+- computer science - common
+- university of california irvine -common
+- donald bren - common
+- uci - common
+- informatics - common
+- The Donald Bren School of Information and Computer Sciences - long and common
+- toilet - not likely to be found easily 
+- perfume - not likely to be found
+- SPY×FAMILY - should not exist in data
+- undergraduate - likely to be on tons of pages
+### Good to Meh:
+- liquids in labs - uncommon word with common
+- Alberto Krone-Martins - should have a good amount of results but not absurd 
+- Advising & Planning - should be specific but not too common
+- Honors Program - ^
+- Papaefthymiou - similar to the martins query 
+- General information - there should be quite a few pages with this but not tons
+- Prerequisite Clearing System - has some common and uncommon terms
+- Recruiting - not stupid common
+- counseling - ^ and should only be on a subset of pages
+- social justice - specific terms that should appear without being costly
+### Others tested:
+- masters of computer science - not super common but will have a good amount of pages
+- thornton ics46 notes - name + class + common
+- Theory of Computation - two terms which have high count in papers
+- facility distribution  - two terms which don't really make sense together
+- artificial intelligence history - two common terms with semi-common
+- prospective alumni - should have very few instances of both terms but should be found together
+- enrollment window - should be on only a couple of pages
+- available capstone sponsorship - ^
+- spring seminars - common with term that may be somewhat restricted
+- hackuci - two terms into one that exists in dataset
+- ucinetid help  - specific term with common 
+- course restrictions - specific pages
+- project management - a course name
+- yelan research - term should not exist + common
+- hybrid-learning - common phrase 
+- genshin is a computer game - contains terms that exist and others that don't 
+- computable AI machine learning big data - sentence of CS buzz words (really really common)
+- Publications & Technical Reports - in json file
+- Tutor coordinators - in many json (bold, title, and body)
+- Death Image Service - in some weird areas
+- send anonymous email - only in some
+### Things done for improvement
+ 1. Create index of index for substantial gain in efficiency and speed.
+ 2.  Split TF-IDF into TF and IDF for more specific calculations when needed without the whole computation. This also removes the relevance on external library for TF-IDF.
+ 3. Switched from using IDF & weight, to TF & weight for helping with the overall weight.
+ 4. Dropped indexing and searching of unigram, bigram, and trigrams.
+ 5. Add length of document during indexing for improved speed via normalization calculation.
+
