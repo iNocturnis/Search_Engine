@@ -14,12 +14,7 @@ import json
 import os
 import shelve
 from bs4 import BeautifulSoup
-from time import perf_counter
-import time
-import threading
-from threading import Lock
-import math
-
+from os.path import exists
 
 #Data process
 from nltk.tokenize import word_tokenize
@@ -27,12 +22,22 @@ from nltk.stem import PorterStemmer
 from sklearn.feature_extraction.text import TfidfVectorizer
 import pandas as pd
 import numpy as np
-
 import re
+import math
 
 #Logging postings
 from posting import Posting
 from worker import Worker
+
+#Multi-threading
+import threading
+from threading import Lock
+
+#Performance
+from time import perf_counter
+import time
+
+
 
 class Node():
 	index_value = ''
@@ -53,10 +58,30 @@ class Indexer():
 		self.stemmer = PorterStemmer()
 		self.data_paths_lock = Lock()
 		self.list_partials_lock = Lock()
-		
+
+		#Loading index_index into memory
+		if exists("merged_index_index"):
+			merged_index_index = open("merged_index.index",'r')
+			merged_index_index.seek(0,0)
+			json_value = merged_index_index.readline()
+			data = json.loads(json_value)
+			self.index_index = dict(data['index'])
+		else:
+			self.index_index = dict()
+
 		self.workers = list()
 		self.worker_factory = worker_factory
 
+	def load_index_index(self):
+		if exists("merged_index.index"):
+			merged_index_index = open("merged_index.index",'r')
+			merged_index_index.seek(0,0)
+			json_value = merged_index_index.readline()
+			data = json.loads(json_value)
+			self.index_index = dict(data['index'])
+		else:
+			print("Index files do not exists, please run the indexer first")
+			return None
 
 	def start_async(self):
 		self.workers = [
@@ -75,17 +100,16 @@ class Indexer():
 
 
 	def get_postings(self,index):
-		merged_index_index = open("merged_index.index" ,'r')
-		merged_index = open("merged_index.full",'r')
-		merged_index_index.seek(0,0)
-		json_value = merged_index_index.readline()
-		data = json.loads(json_value)
-		index_index = dict(data['index'])
-		to_seek = index_index[index]
-		merged_index.seek(to_seek,0)
-		json_value = merged_index.readline()
-		data = json.loads(json_value)
-		return data['postings']
+		try:
+			merged_index = open("merged_index.full",'r')
+			to_seek = self.index_index[index]
+			merged_index.seek(to_seek,0)
+			json_value = merged_index.readline()
+			data = json.loads(json_value)
+			return data['postings']
+		except FileNotFoundError:
+			print("Index files do not exists, please run the indexer first")
+			return None
 
 	def set_weight(self):
 		weight_file = open('docs.weight','w')
@@ -94,12 +118,15 @@ class Indexer():
 		weight_file.close()
 
 	def get_weight(self,doc_id):
-		weight = open('docs.weight','r')
-		weight.seek(0,0)
-		json_value = weight.readline()
-		data = json.loads(json_value)
-		return data[doc_id]
-
+		if exists('docs.weight'):
+			weight = open('docs.weight','r')
+			weight.seek(0,0)
+			json_value = weight.readline()
+			data = json.loads(json_value)
+			return data[doc_id]
+		else:
+			print("Index files do not exists, please run the indexer first")
+			return None
 	def get_data_path(self):
 		for directory in os.listdir(self.path):
 			for file in os.listdir(self.path + "/" + directory + "/"):
@@ -202,28 +229,13 @@ class Indexer():
 
 		merged_index_index.close()
 		merged_index.close()
+		load_index_index()
 
-
-def main():
-	indexer = Indexer(list(),dict(),list())
-	indexer.get_data_path()
-	print("We have " + str(len(indexer.data_paths)) + " documents to go through !" )
-	indexer.start()
-	indexer.merge()
-	print("Finished merging into 1 big happy family")
-	indexer.set_weight()
-
-	tic = time.perf_counter()
-	indexer.get_postings('artifici')
-	toc = time.perf_counter()
-	print(f"Took {toc - tic:0.4f} seconds to get postings for artifici")
-	tic = time.perf_counter()
-	indexer.get_weight('00ba3af6a00b7cfb4928e5d234342c5dc46b4e31714d4a8f315a2dd4d8e49860')
-	print(f"Took {toc - tic:0.4f} seconds to get weight for some random page ")
-	toc = time.perf_counter()
-
-	
-
-
-if __name__ == "__main__":
-	main()
+	def create_index(self):
+		indexer.get_data_path()
+		print("We have " + str(len(indexer.data_paths)) + " documents to go through !" )
+		indexer.start()
+		indexer.merge()
+		print("Finished merging into 1 big happy family")
+		indexer.set_weight()
+		print("I AM DONE INDEXING !")
