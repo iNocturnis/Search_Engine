@@ -19,7 +19,6 @@ from os.path import exists
 #Data process
 from nltk.tokenize import word_tokenize
 from nltk.stem import PorterStemmer
-from sklearn.feature_extraction.text import TfidfVectorizer
 import pandas as pd
 import numpy as np
 import re
@@ -60,7 +59,7 @@ class Indexer():
 		self.list_partials_lock = Lock()
 
 		#Loading index_index into memory
-		if exists("merged_index_index"):
+		if exists("merged_index.index"):
 			merged_index_index = open("merged_index.index",'r')
 			merged_index_index.seek(0,0)
 			json_value = merged_index_index.readline()
@@ -79,6 +78,19 @@ class Indexer():
 			json_value = merged_index_index.readline()
 			data = json.loads(json_value)
 			self.index_index = dict(data['index'])
+			return self.index_index
+		else:
+			print("Index files do not exists, please run the indexer first")
+			return None
+
+	def load_weight_index(self):
+		if exists("docs.weight"):
+			weight_file = open("docs.weight",'r')
+			weight_file.seek(0,0)
+			json_value = weight_file.readline()
+			data = json.loads(json_value)
+			self.weight = data
+			return self.weight
 		else:
 			print("Index files do not exists, please run the indexer first")
 			return None
@@ -118,15 +130,7 @@ class Indexer():
 		weight_file.close()
 
 	def get_weight(self,doc_id):
-		if exists('docs.weight'):
-			weight = open('docs.weight','r')
-			weight.seek(0,0)
-			json_value = weight.readline()
-			data = json.loads(json_value)
-			return data[doc_id]
-		else:
-			print("Index files do not exists, please run the indexer first")
-			return None
+		return self.weight[doc_id]
 	def get_data_path(self):
 		for directory in os.listdir(self.path):
 			for file in os.listdir(self.path + "/" + directory + "/"):
@@ -239,3 +243,7 @@ class Indexer():
 		print("Finished merging into 1 big happy family")
 		self.set_weight()
 		print("I AM DONE INDEXING !")
+
+if __name__ == "__main__":
+	indexer = Indexer(list(),dict(),list())
+	indexer.create_index()

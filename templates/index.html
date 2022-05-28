@@ -19,8 +19,11 @@
 		</form>
 	</div>
 
+	
+	<p>{{ips}}</p>
+
 	{% for result in results %}
-		<p>{{result[0]}} at <a href="{{result[1]}}">{{result[1]}}</a></p>
+		<p> <a href="{{result}}">{{result}}</a></p>
 	{% endfor %}
 
 	{% for error in errors %}
